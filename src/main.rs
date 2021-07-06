@@ -3,7 +3,7 @@ mod year2020;
 use anyhow::Context;
 use chrono::prelude::*;
 use dotenv::dotenv;
-use log::{error, info};
+use log::{error, info, warn};
 use reqwest::{blocking::Client, header};
 use std::{
     collections::HashMap, default::Default, env, fmt, fs, path::PathBuf, str::FromStr,
@@ -71,8 +71,8 @@ struct Opt {
     input: Option<PathBuf>,
 }
 
-fn all_puzzles() -> HashMap<(i32, u32), fn(&str) -> String> {
-    let mut puzzles: HashMap<(i32, u32), fn(&str) -> String> = HashMap::new();
+fn all_puzzles() -> HashMap<(i32, u32), fn(&str) -> Vec<String>> {
+    let mut puzzles: HashMap<(i32, u32), fn(&str) -> Vec<String>> = HashMap::new();
     puzzles.insert((2020, 1), year2020::day01::solve);
     puzzles
 }
@@ -110,13 +110,21 @@ fn main() -> anyhow::Result<()> {
 
         let before_solving = Instant::now();
 
-        let solution = solve(&input);
+        let solutions = solve(&input);
 
-        info!(
-            "Solution found in {:.3} ms",
-            before_solving.elapsed().as_secs_f64() * 1000.
-        );
-        info!("Solution: {}", solution);
+        if !solutions.is_empty() {
+            info!(
+                "{} solution{} found in {:.3} ms",
+                solutions.len(),
+                if solutions.len() == 1 { "" } else { "s" },
+                before_solving.elapsed().as_secs_f64() * 1000.
+            );
+            for (idx, solution) in solutions.iter().enumerate() {
+                println!("Part {}: {}", idx + 1, solution);
+            }
+        } else {
+            warn!("No solutions found")
+        }
     } else {
         error!("No solver found for day {} of {}", opt.day, opt.year);
     }

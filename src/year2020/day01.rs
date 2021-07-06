@@ -1,3 +1,5 @@
-pub fn solve(input: &str) -> String {
-    String::from("Hello world")
+pub fn solve(input: &str) -> Vec<String> {
+    let mut solutions = Vec::new();
+
+    solutions
 }
