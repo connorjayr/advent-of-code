@@ -1,9 +1,14 @@
 mod year2020;
 
+use anyhow::Context;
 use chrono::prelude::*;
 use dotenv::dotenv;
 use log::{error, info};
-use std::{collections::HashMap, default::Default, env, fmt, path::PathBuf, str::FromStr, time::Instant};
+use reqwest::{blocking::Client, header};
+use std::{
+    collections::HashMap, default::Default, env, fmt, fs, path::PathBuf, str::FromStr,
+    time::Instant,
+};
 use structopt::StructOpt;
 
 #[derive(Debug, Eq, Hash, PartialEq)]
@@ -66,28 +71,54 @@ struct Opt {
     input: Option<PathBuf>,
 }
 
-fn all_puzzles() -> HashMap<(&'static Year, &'static Day), fn(&str) -> String> {
-    let mut puzzles: HashMap<(&'static Year, &'static Day), fn(&str) -> String> = HashMap::new();
-    puzzles.insert((&Year(2020), &Day(1)), year2020::day01::solve);
+fn all_puzzles() -> HashMap<(i32, u32), fn(&str) -> String> {
+    let mut puzzles: HashMap<(i32, u32), fn(&str) -> String> = HashMap::new();
+    puzzles.insert((2020, 1), year2020::day01::solve);
     puzzles
 }
 
-fn main() {
+fn retrieve_input(year: &Year, day: &Day) -> anyhow::Result<String> {
+    let session = env::var("SESSION")
+        .context("No session found, go to https://adventofcode.com to obtain a session")?;
+
+    let client = Client::new();
+    let url = format!("https://adventofcode.com/{}/day/{}/input", year.0, day.0);
+    client
+        .get(&url)
+        .header(header::COOKIE, format!("session={}", session))
+        .send()
+        .with_context(|| format!("Could not make request to {}", url))?
+        .text()
+        .with_context(|| format!("Could not parse response from {}", url))
+}
+
+fn main() -> anyhow::Result<()> {
     dotenv().ok();
 
     env_logger::init();
 
     let opt = Opt::from_args();
 
-    let session = env::var("SESSION").ok();
-
     let puzzles = all_puzzles();
-    if let Some(&solve) = puzzles.get(&(&opt.year, &opt.day)) {
+    if let Some(&solve) = puzzles.get(&(opt.year.0, opt.day.0)) {
+        let input = if let Some(path) = opt.input {
+            fs::read_to_string(&path)
+                .with_context(|| format!("Could not read from input file '{}'", path.display()))?
+        } else {
+            retrieve_input(&opt.year, &opt.day)?
+        };
+
         let before_solving = Instant::now();
-        let solution = solve("");
-        info!("Solution found in {:.3} ms", before_solving.elapsed().as_secs_f64() * 1000.);
+
+        let solution = solve(&input);
+
+        info!(
+            "Solution found in {:.3} ms",
+            before_solving.elapsed().as_secs_f64() * 1000.
+        );
         info!("Solution: {}", solution);
     } else {
         error!("No solver found for day {} of {}", opt.day, opt.year);
     }
+    Ok(())
 }
