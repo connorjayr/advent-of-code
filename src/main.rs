@@ -1,6 +1,7 @@
+mod solver;
 mod year2020;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use chrono::prelude::*;
 use dotenv::dotenv;
 use log::{error, info, warn};
@@ -8,7 +9,8 @@ use reqwest::{blocking::Client, header};
 use std::{
     collections::HashMap,
     default::Default,
-    env, fmt,
+    env,
+    fmt::{self, Display, Formatter},
     fs::{self, File},
     io::Write,
     path::PathBuf,
@@ -26,8 +28,8 @@ impl Default for Year {
     }
 }
 
-impl fmt::Display for Year {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Display for Year {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
     }
 }
@@ -77,8 +79,9 @@ struct Opt {
     input: Option<PathBuf>,
 }
 
-fn all_puzzles() -> HashMap<(i32, u32), fn(&str) -> Vec<String>> {
-    let mut puzzles: HashMap<(i32, u32), fn(&str) -> Vec<String>> = HashMap::new();
+type Solver = fn(&str) -> solver::Result;
+fn all_puzzles() -> HashMap<(i32, u32), Solver> {
+    let mut puzzles: HashMap<(i32, u32), Solver> = HashMap::new();
     puzzles.insert((2020, 1), year2020::day01::solve);
     puzzles
 }
@@ -165,8 +168,10 @@ fn main() -> anyhow::Result<()> {
 
         let before_solving = Instant::now();
 
-        info!("Solving puzzle...");
-        let solutions = solve(&input);
+        info!("Solving puzzle for day {} of {}...", opt.day, opt.year);
+        let solutions = solve(&input)
+            .map_err(|e| anyhow!(e))
+            .context("An unexpected error occurred while solving puzzle")?;
 
         if !solutions.is_empty() {
             info!(

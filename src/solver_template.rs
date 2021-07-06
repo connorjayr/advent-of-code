@@ -1,5 +1,7 @@
-pub fn solve(input: &str) -> Vec<String> {
+use crate::solver;
+
+pub fn solve(input: &str) -> solver::Result {
     let mut solutions = Vec::new();
 
-    solutions
+    Ok(solutions)
 }
