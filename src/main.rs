@@ -6,7 +6,13 @@ use dotenv::dotenv;
 use log::{error, info, warn};
 use reqwest::{blocking::Client, header};
 use std::{
-    collections::HashMap, default::Default, env, fmt, fs, path::PathBuf, str::FromStr,
+    collections::HashMap,
+    default::Default,
+    env, fmt,
+    fs::{self, File},
+    io::Write,
+    path::PathBuf,
+    str::FromStr,
     time::Instant,
 };
 use structopt::StructOpt;
@@ -78,18 +84,67 @@ fn all_puzzles() -> HashMap<(i32, u32), fn(&str) -> Vec<String>> {
 }
 
 fn retrieve_input(year: &Year, day: &Day) -> anyhow::Result<String> {
+    let result = env::var("CACHE_DIR");
+    let cache_path = match result {
+        Ok(cache_dir) => {
+            let mut path = PathBuf::new();
+            path.push(cache_dir);
+            path.push(format!("{}", year.0));
+            path.push(format!("{}.txt", day.0));
+            Some(path)
+        }
+        Err(_) => None,
+    };
+
+    // Attempt to read puzzle input from the cache, but do nothing if an error occurs
+    if let Some(ref cache_path) = cache_path {
+        let result = fs::read_to_string(cache_path);
+        if let Ok(input) = result {
+            info!("Found puzzle input in cache");
+            return Ok(input);
+        }
+    }
+
     let session = env::var("SESSION")
         .context("No session found, go to https://adventofcode.com to obtain a session")?;
 
     let client = Client::new();
     let url = format!("https://adventofcode.com/{}/day/{}/input", year.0, day.0);
-    client
+    info!("Retrieving puzzle input from https://adventofcode.com...");
+    let input = client
         .get(&url)
         .header(header::COOKIE, format!("session={}", session))
         .send()
         .with_context(|| format!("Could not make request to {}", url))?
         .text()
-        .with_context(|| format!("Could not parse response from {}", url))
+        .with_context(|| format!("Could not parse response from {}", url))?;
+    info!("Successfully retrieved puzzle input");
+
+    // Attempt to write puzzle input to the cache
+    match cache_path {
+        Some(cache_path) => {
+            let dir = cache_path.parent().unwrap();
+            fs::create_dir_all(dir).with_context(|| {
+                format!("Could not create directory '{}' in cache", dir.display())
+            })?;
+
+            let mut cache_file = File::create(&cache_path).with_context(|| {
+                format!("Could not create file '{}' in cache", cache_path.display())
+            })?;
+
+            cache_file.write_all(input.as_bytes()).with_context(|| {
+                format!(
+                    "Could not write to file '{}' in cache",
+                    cache_path.display()
+                )
+            })?;
+        }
+        None => {
+            warn!("Could not store puzzle input in cache; ensure that CACHE_DIR is set in .env");
+        }
+    };
+
+    Ok(input)
 }
 
 fn main() -> anyhow::Result<()> {
@@ -110,6 +165,7 @@ fn main() -> anyhow::Result<()> {
 
         let before_solving = Instant::now();
 
+        info!("Solving puzzle...");
         let solutions = solve(&input);
 
         if !solutions.is_empty() {
