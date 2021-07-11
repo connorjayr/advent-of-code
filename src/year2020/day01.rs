@@ -7,7 +7,8 @@ pub fn solve(input: &str) -> solver::Result {
     let expenses = input
         .lines()
         .map(|s| s.parse::<i32>())
-        .collect::<Result<HashSet<_>, _>>()?;
+        .collect::<Result<HashSet<_>, _>>()
+        .map_err(|e| solver::Error::new(e, "cannot parse expense as integer"))?;
 
     for expense in expenses.iter() {
         if expenses.contains(&(2020 - expense)) {

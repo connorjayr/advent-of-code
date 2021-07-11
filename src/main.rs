@@ -1,7 +1,7 @@
 mod solver;
 mod year2020;
 
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use chrono::prelude::*;
 use dotenv::dotenv;
 use log::{error, info, warn};
@@ -83,6 +83,7 @@ type Solver = fn(&str) -> solver::Result;
 fn all_puzzles() -> HashMap<(i32, u32), Solver> {
     let mut puzzles: HashMap<(i32, u32), Solver> = HashMap::new();
     puzzles.insert((2020, 1), year2020::day01::solve);
+    puzzles.insert((2020, 2), year2020::day02::solve);
     puzzles
 }
 
@@ -109,7 +110,7 @@ fn retrieve_input(year: &Year, day: &Day) -> anyhow::Result<String> {
     }
 
     let session = env::var("SESSION")
-        .context("No session found, go to https://adventofcode.com to obtain a session")?;
+        .context("no session found, go to https://adventofcode.com to obtain a session")?;
 
     let client = Client::new();
     let url = format!("https://adventofcode.com/{}/day/{}/input", year.0, day.0);
@@ -118,9 +119,9 @@ fn retrieve_input(year: &Year, day: &Day) -> anyhow::Result<String> {
         .get(&url)
         .header(header::COOKIE, format!("session={}", session))
         .send()
-        .with_context(|| format!("Could not make request to {}", url))?
+        .with_context(|| format!("could not make request to {}", url))?
         .text()
-        .with_context(|| format!("Could not parse response from {}", url))?;
+        .with_context(|| format!("could not parse response from {}", url))?;
     info!("Successfully retrieved puzzle input");
 
     // Attempt to write puzzle input to the cache
@@ -128,22 +129,22 @@ fn retrieve_input(year: &Year, day: &Day) -> anyhow::Result<String> {
         Some(cache_path) => {
             let dir = cache_path.parent().unwrap();
             fs::create_dir_all(dir).with_context(|| {
-                format!("Could not create directory '{}' in cache", dir.display())
+                format!("could not create directory '{}' in cache", dir.display())
             })?;
 
             let mut cache_file = File::create(&cache_path).with_context(|| {
-                format!("Could not create file '{}' in cache", cache_path.display())
+                format!("could not create file '{}' in cache", cache_path.display())
             })?;
 
             cache_file.write_all(input.as_bytes()).with_context(|| {
                 format!(
-                    "Could not write to file '{}' in cache",
+                    "could not write to file '{}' in cache",
                     cache_path.display()
                 )
             })?;
         }
         None => {
-            warn!("Could not store puzzle input in cache; ensure that CACHE_DIR is set in .env");
+            warn!("could not store puzzle input in cache; ensure that CACHE_DIR is set in .env");
         }
     };
 
@@ -151,7 +152,10 @@ fn retrieve_input(year: &Year, day: &Day) -> anyhow::Result<String> {
 }
 
 fn main() -> anyhow::Result<()> {
-    dotenv().ok();
+    let result = dotenv();
+    if let Err(e) = result {
+        warn!("{}", anyhow::Error::new(e));
+    }
 
     env_logger::init();
 
@@ -161,7 +165,7 @@ fn main() -> anyhow::Result<()> {
     if let Some(&solve) = puzzles.get(&(opt.year.0, opt.day.0)) {
         let input = if let Some(path) = opt.input {
             fs::read_to_string(&path)
-                .with_context(|| format!("Could not read from input file '{}'", path.display()))?
+                .with_context(|| format!("cannot read from input file '{}'", path.display()))?
         } else {
             retrieve_input(&opt.year, &opt.day)?
         };
@@ -169,9 +173,7 @@ fn main() -> anyhow::Result<()> {
         let before_solving = Instant::now();
 
         info!("Solving puzzle for day {} of {}...", opt.day, opt.year);
-        let solutions = solve(&input)
-            .map_err(|e| anyhow!(e))
-            .context("An unexpected error occurred while solving puzzle")?;
+        let solutions = solve(&input).context("cannot solve puzzle")?;
 
         if !solutions.is_empty() {
             info!(
