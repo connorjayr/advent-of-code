@@ -19,12 +19,14 @@ use std::{
 };
 use structopt::StructOpt;
 
+/// Newtype for a year. Allows any command-line arguments that take a year to use the current year
+/// as a default value.
 #[derive(Debug, Eq, Hash, PartialEq)]
 struct Year(i32);
 
 impl Default for Year {
-    fn default() -> Year {
-        Year(Local::now().year())
+    fn default() -> Self {
+        Self(Local::now().year())
     }
 }
 
@@ -36,17 +38,19 @@ impl Display for Year {
 
 impl FromStr for Year {
     type Err = <i32 as FromStr>::Err;
-    fn from_str(s: &str) -> Result<Year, Self::Err> {
-        Ok(Year(s.parse()?))
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.parse()?))
     }
 }
 
+/// Newtype for a day. Allows any command-line arguments that take a day to use the current day as a
+/// default value.
 #[derive(Debug, Eq, Hash, PartialEq)]
 struct Day(u32);
 
 impl Default for Day {
-    fn default() -> Day {
-        Day(Local::now().day())
+    fn default() -> Self {
+        Self(Local::now().day())
     }
 }
 
@@ -58,8 +62,8 @@ impl fmt::Display for Day {
 
 impl FromStr for Day {
     type Err = <u32 as FromStr>::Err;
-    fn from_str(s: &str) -> Result<Day, Self::Err> {
-        Ok(Day(s.parse()?))
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.parse()?))
     }
 }
 
@@ -79,14 +83,22 @@ struct Opt {
     input: Option<PathBuf>,
 }
 
+/// A function that solves a puzzle.
 type Solver = fn(&str) -> solver::Result;
+
+/// Returns a map that maps a tuple containing a year and day to the function which solves the
+/// puzzle for that year and day.
 fn all_puzzles() -> HashMap<(i32, u32), Solver> {
     let mut puzzles: HashMap<(i32, u32), Solver> = HashMap::new();
     puzzles.insert((2020, 1), year2020::day01::solve);
     puzzles.insert((2020, 2), year2020::day02::solve);
+    puzzles.insert((2020, 3), year2020::day03::solve);
     puzzles
 }
 
+/// Retrieves the input for a puzzle from https://adventofcode.com, which requires the environment
+/// variable `SESSION` to be set (see `.env.template`). If the environment variable `CACHE_DIR` is
+/// set, then the puzzle input will be read from/written to the cache as appropriate.
 fn retrieve_input(year: &Year, day: &Day) -> anyhow::Result<String> {
     let result = env::var("CACHE_DIR");
     let cache_path = match result {
@@ -151,6 +163,7 @@ fn retrieve_input(year: &Year, day: &Day) -> anyhow::Result<String> {
     Ok(input)
 }
 
+/// Launches the application.
 fn main() -> anyhow::Result<()> {
     let result = dotenv();
     if let Err(e) = result {

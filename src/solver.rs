@@ -4,6 +4,7 @@ use std::{
     result,
 };
 
+/// An error that occurs while solving a puzzle.
 #[derive(Debug)]
 pub struct Error {
     source: Option<Box<dyn error::Error + Send + Sync>>,
@@ -11,17 +12,16 @@ pub struct Error {
 }
 
 impl Error {
-    pub fn new(
-        source: impl error::Error + Send + Sync + 'static,
-        desc: impl Into<String>,
-    ) -> Error {
-        Error {
+    /// Constructs a new `Error` that is the result of another error.
+    pub fn new(source: impl error::Error + Send + Sync + 'static, desc: impl Into<String>) -> Self {
+        Self {
             source: Some(Box::new(source)),
             desc: desc.into(),
         }
     }
 
-    pub fn from_desc(desc: impl Into<String>) -> Error {
+    /// Constructs a new `Error` from a description.
+    pub fn from_desc(desc: impl Into<String>) -> Self {
         Error {
             source: None,
             desc: desc.into(),
@@ -44,4 +44,5 @@ impl error::Error for Error {
     }
 }
 
+/// The result of solving a puzzle.
 pub type Result = result::Result<Vec<String>, Error>;

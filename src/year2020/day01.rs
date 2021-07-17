@@ -1,6 +1,7 @@
 use crate::solver;
 use std::collections::HashSet;
 
+/// Solves the puzzle for day 1 of 2020.
 pub fn solve(input: &str) -> solver::Result {
     let mut solutions = Vec::new();
 

@@ -1,6 +1,7 @@
 use crate::solver;
 use std::str::FromStr;
 
+/// A set of values that describes the conditions for when a password is valid.
 #[derive(Debug)]
 struct PasswordPolicy {
     range: (usize, usize),
@@ -53,6 +54,7 @@ impl FromStr for PasswordPolicy {
     }
 }
 
+/// Solves the puzzle for day 2 of 2020.
 pub fn solve(input: &str) -> solver::Result {
     let mut solutions = Vec::new();
 
