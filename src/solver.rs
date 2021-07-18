@@ -1,4 +1,6 @@
+use crate::year2020;
 use std::{
+    collections::HashMap,
     error,
     fmt::{self, Display, Formatter},
     result,
@@ -46,3 +48,15 @@ impl error::Error for Error {
 
 /// The result of solving a puzzle.
 pub type Result = result::Result<Vec<String>, Error>;
+
+/// A function that solves a puzzle.
+pub type Solver = fn(&str) -> Result;
+
+/// Returns a map that maps a day and year to a solver that solves the puzzle for that day and year.
+pub fn all_puzzles() -> HashMap<(i32, u32), Solver> {
+    let mut puzzles: HashMap<(i32, u32), Solver> = HashMap::new();
+    puzzles.insert((2020, 1), year2020::day01::solve);
+    puzzles.insert((2020, 2), year2020::day02::solve);
+    puzzles.insert((2020, 3), year2020::day03::solve);
+    puzzles
+}
