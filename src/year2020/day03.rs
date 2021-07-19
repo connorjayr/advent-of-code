@@ -42,9 +42,8 @@ impl Map {
         }
     }
 
-    /// Counts the number of trees encountered while traversing this map using slopes provided by an
-    /// iterator. Counting is stopped once either the bottom of this map is reached or the iterator
-    /// of slopes is exhausted.
+    /// Counts the number of trees encountered while traversing this map given a slope. The map
+    /// repeats infinitely to the right, but not downwards.
     ///
     /// # Examples
     ///
@@ -57,25 +56,18 @@ impl Map {
     /// .expect("cannot construct map");
     /// assert_eq!(1, map.count_trees());
     /// ```
-    fn count_trees<'a>(&self, slope_iter: impl Iterator<Item = &'a Slope>) -> usize {
-        let mut slope_iter = slope_iter.peekable();
-
-        let mut pos = (0, 0);
+    fn count_trees<'a>(&self, slope: Slope) -> usize {
+        let mut pos = slope;
         let mut count = 0;
-        loop {
-            let slope = slope_iter.next().unwrap();
-            pos.0 += slope.0;
-            pos.1 = (pos.1 + slope.1) % self.width;
-            if pos.0 >= self.height && slope_iter.peek().is_none() {
-                break;
-            }
-
+        while pos.0 < self.height {
             // Since pos.0 < self.height and pos.1 < self.width, we can safely use them as indices
             if self.map[pos.0].chars().nth(pos.1).unwrap() == '#' {
                 count += 1;
             }
-        }
 
+            pos.0 += slope.0;
+            pos.1 = (pos.1 + slope.1) % self.width;
+        }
         count
     }
 }
@@ -85,7 +77,14 @@ pub fn solve(input: &str) -> solver::Result {
     let mut solutions = Vec::new();
 
     let map = Map::new(input.lines().map(String::from).collect())?;
-    solutions.push(map.count_trees([(1, 3)].iter().cycle()).to_string());
+    solutions.push(map.count_trees((1, 3)).to_string());
+    solutions.push(
+        [(1, 1), (1, 3), (1, 5), (1, 7), (2, 1)]
+            .iter()
+            .map(|slope| map.count_trees(*slope))
+            .product::<usize>()
+            .to_string(),
+    );
 
     Ok(solutions)
 }
