@@ -17,7 +17,7 @@ use std::{
 /// Newtype for a year. Allows any command-line arguments that take a year to use the current year
 /// as a default value.
 #[derive(Debug, Eq, Hash, PartialEq)]
-pub struct Year(i32);
+pub struct Year(pub i32);
 
 impl Default for Year {
     fn default() -> Self {
@@ -41,7 +41,7 @@ impl FromStr for Year {
 /// Newtype for a day. Allows any command-line arguments that take a day to use the current day as a
 /// default value.
 #[derive(Debug, Eq, Hash, PartialEq)]
-pub struct Day(u32);
+pub struct Day(pub u32);
 
 impl Default for Day {
     fn default() -> Self {

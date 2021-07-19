@@ -1,14 +1,9 @@
-mod solver;
-
-use advent_of_code::{self, year2020, Day, Year};
+use advent_of_code::{self, solver, Day, Year};
 use anyhow::Context;
+use dotenv::dotenv;
 use log::{error, info, warn};
-use reqwest::{blocking::Client, header};
 use std::{
-    collections::HashMap,
-    env,
-    fs::{self, File},
-    io::Write,
+    fs::{self},
     path::PathBuf,
     time::Instant,
 };
@@ -41,7 +36,7 @@ fn main() -> anyhow::Result<()> {
 
     let opt = Opt::from_args();
 
-    let puzzles = all_puzzles();
+    let puzzles = solver::all_puzzles();
     if let Some(&solve) = puzzles.get(&(opt.year.0, opt.day.0)) {
         let input = if let Some(path) = opt.input {
             fs::read_to_string(&path)
